@@ -4,12 +4,16 @@ import mujoco
 
 from mjlab.entity import EntityCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
+from mjlab.managers.event_manager import EventTermCfg
+from mjlab.managers.scene_entity_config import SceneEntityCfg
 
 from src.tasks.velocity.config.g1.env_cfgs import unitree_g1_flat_env_cfg
 
+from .events import move_platform_sinusoidal
+
 
 def get_platform_spec() -> mujoco.MjSpec:
-    """Create the first ForesightG1 platform."""
+    """Create the ForesightG1 moving platform."""
 
     spec = mujoco.MjSpec()
 
@@ -35,7 +39,7 @@ def get_platform_spec() -> mujoco.MjSpec:
 def foresight_g1_dynamic_env_cfg(
     play: bool = False,
 ) -> ManagerBasedRlEnvCfg:
-    """Create ForesightG1 Dynamic Playground v1."""
+    """Create ForesightG1 Dynamic Playground."""
 
     # Reuse the already validated Unitree G1 flat locomotion environment.
     cfg = unitree_g1_flat_env_cfg(play=play)
@@ -55,5 +59,21 @@ def foresight_g1_dynamic_env_cfg(
         **cfg.scene.entities,
         "moving_platform": platform_cfg,
     }
+
+    # Move the platform sinusoidally along the world Y axis.
+    #
+    # Center:    (2.0, 0.0, 0.05)
+    # Amplitude: +/- 0.75 m
+    # Period:    4 seconds
+    cfg.events["move_platform"] = EventTermCfg(
+        func=move_platform_sinusoidal,
+        mode="step",
+        params={
+            "asset_cfg": SceneEntityCfg("moving_platform"),
+            "center": (2.0, 0.0, 0.05),
+            "amplitude_m": 0.75,
+            "period_s": 4.0,
+        },
+    )
 
     return cfg
